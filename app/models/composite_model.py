@@ -9,7 +9,7 @@ class WeeklyMealplan(BaseModel):
     links: Optional[Dict[str, Any]] = Field(None, alias="links")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_schema_extra = {
             "example": {
                 "week_plan_id": 1,
@@ -32,7 +32,7 @@ class DailyMealplan(BaseModel):
     links: Optional[Dict[str, Any]] = Field(None, alias="links")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_schema_extra = {
             "example": {
                 "day_plan_id": 1,
@@ -57,7 +57,7 @@ class Mealplan(BaseModel):
     links: Optional[Dict[str, Any]] = Field(None, alias="links")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_schema_extra = {
             "example": {
                 "meal_id": 10,
@@ -90,7 +90,7 @@ class Nutrition(BaseModel):
     goal: str
 
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "recipe_id": 1,
                 "calories": 400,
@@ -174,7 +174,7 @@ class PaginatedResponse(BaseModel):
     links: Dict[str, Any]
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         json_schema_extra = {
             "example": {
                 "items": [

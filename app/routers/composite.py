@@ -22,6 +22,14 @@ async def get_nutrition(nutrition_id: int):
         return nutrition_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/composite/nutrition/recipe/{recipe_id}", tags=["Nutrition"])
+async def get_nutrition_from_recipe(recipe_id: int):
+    try:
+        nutrition_info = resource.nutrition_client.get(f"nutrition/recipe/{recipe_id}")
+        return nutrition_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/composite/mealplans/{mealplan_id}", tags=["Meal Plans"])
 async def get_mealplan(mealplan_id: int) -> Mealplan:
