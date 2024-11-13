@@ -19,3 +19,12 @@ class MicroserviceClient:
         response = requests.put(f"{self.base_url}/{endpoint}", json=data)
         response.raise_for_status()
         return response.json()
+    
+    def delete(self, endpoint: str):
+        url = f"{self.base_url}/{endpoint}"
+        response = requests.delete(url)
+        response.raise_for_status()  # Raises an error for unsuccessful requests
+        return response.json()
+    
+    
+	
