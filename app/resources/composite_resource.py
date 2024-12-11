@@ -7,10 +7,66 @@ from app.services.service_factory import ServiceFactory
 from app.resources.microservice_client import MicroserviceClient
 import requests
 
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+import google.auth
+import os
+import json
+import jwt
+from datetime import datetime, timedelta
+
+# JWT Secret and Expiration Time
+# JWT_SECRET = "your_jwt_secret_key"
+# JWT_ALGORITHM = "HS256"
+# JWT_EXPIRATION_MINUTES = 30  # Token expiry time in minutes
+
+# # OAuth2 password bearer token
+# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+# # Function to authenticate the user using Google
+# def google_login(request: Request):
+#     # Assuming credentials.json is your Google OAuth2 client credentials file
+#     client_secrets_file = os.path.join(os.getcwd(), 'client_secrets.json')
+#     flow = InstalledAppFlow.from_client_secrets_file(
+#         client_secrets_file, scopes=["https://www.googleapis.com/auth/userinfo.profile"]
+#     )
+#     credentials = flow.run_local_server(port=0)
+
+#     # Get the user's info
+#     session = credentials.authorize(Request())
+#     user_info = session.get("https://www.googleapis.com/oauth2/v3/userinfo").json()
+
+#     # You can use user_info to create a user record in the database, etc.
+
+#     # After successful login, issue a JWT token for the user
+#     token = create_jwt_token(user_info["sub"])
+#     return {"access_token": token, "token_type": "bearer"}
+
+# # JWT token creation
+# def create_jwt_token(user_id: str):
+#     expiration = datetime.utcnow() + timedelta(minutes=JWT_EXPIRATION_MINUTES)
+#     to_encode = {"sub": user_id, "exp": expiration}
+#     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+#     return encoded_jwt
+
+# # Middleware to validate JWT tokens
+# async def validate_jwt_token(token: str = Depends(oauth2_scheme)):
+#     try:
+#         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+#         return payload
+#     except jwt.PyJWTError:
+#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+
+# Apply this middleware for token validation globally or on specific routes
+
+
 class CompositeResource(BaseResource):
     
     def __init__(self, config):
         super().__init__(config)
+        self.data_service = ServiceFactory.get_service("CompositeResourceDataService")
         
         # Primary and fallback URLs for each microservice
         self.recipe_url = 'http://35.243.235.4:8000'  # Yuxuan AWS URL
@@ -38,6 +94,14 @@ class CompositeResource(BaseResource):
             return response.status_code == 200
         except requests.RequestException:
             return False
+        
+    def get_jwt_token(self, username: str):
+        """Fetch the JWT token for a user from the database."""
+        return self.data_service.get_jwt_token(username)
+
+    def update_jwt_token(self, user_id: int, new_jwt_token: str):
+        """Update the JWT token for a user in the database."""
+        return self.data_service.update_jwt_token(user_id, new_jwt_token)
 
     # Implementing the existing CRUD functions and count retrieval as needed
     def create_by_key(self, data: dict) -> Mealplan:
@@ -79,6 +143,29 @@ class CompositeResource(BaseResource):
     def get_total_count(self, collection: str) -> int:
         client = self._get_client_for_collection(collection)
         return client.get_total_count(collection)
+
+    # def make_authenticated_request(self, client, method, endpoint, user_id, data=None):
+    #     """
+    #     Makes a request to the specified client with a user-specific header.
+    #     """
+    #     headers = {"X-User-ID": str(user_id)}  # Include user ID as a custom header
+    #     if method == "GET":
+    #         return client.get(endpoint, headers=headers)
+    #     elif method == "POST":
+    #         return client.post(endpoint, json=data, headers=headers)
+    #     elif method == "PUT":
+    #         return client.put(endpoint, json=data, headers=headers)
+    #     elif method == "DELETE":
+    #         return client.delete(endpoint, headers=headers)
+    #     else:
+    #         raise ValueError(f"Unsupported HTTP method: {method}")
+
+    # def get_mealplans(self):
+    #     return self.make_authenticated_request(self.mealplan_client, "GET", "mealplans/")
+    
+
+
+
 
     # def get_by_key(self, key: Any, collection: str):
     #     d_service = self.data_service

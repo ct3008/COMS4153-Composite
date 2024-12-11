@@ -15,7 +15,7 @@ class ServiceFactory(BaseServiceFactory):
         # TODO -- The terrible, hardcoding and hacking continues.
         #
         if service_name == 'CompositeResource':
-            result = composite_resource.MealplanResource(config=None)
+            result = composite_resource.CompositeResource(config=None)
         elif service_name == 'CompositeResourceDataService':
             context = dict(user="root", password="dbuserdbuser",
                            host="35.196.59.220", port=3306)

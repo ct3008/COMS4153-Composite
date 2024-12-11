@@ -24,6 +24,58 @@ class MySQLRDBDataService(DataDataService):
             autocommit=True
         )
         return connection
+    
+    def get_jwt_token(self, username:str):
+        connection = None
+        try:
+            connection = self._get_connection()
+            cursor = connection.cursor()
+            sql = "SELECT user_id, username, jwt_token FROM `users`.`account` WHERE username = %s"
+            print("SQL: ", sql)
+            cursor.execute(sql, (username,))
+            result = cursor.fetchone()
+            if result:
+                return result
+            return None
+        except Exception as e:
+            print(f"Error in get_jwt_token: {e}")
+            raise e
+        finally:
+            if connection:
+                connection.close()
+
+
+    def update_jwt_token(self, user_id: int, new_jwt_token: str):
+        connection = None
+        try:
+            connection = self._get_connection()
+            cursor = connection.cursor()
+
+            # Use parameterized queries to avoid SQL injection
+            sql = """
+                UPDATE `users`.`account` 
+                SET jwt_token = %s
+                WHERE user_id = %s
+            """
+
+            print("JWT TOKEN NEW SQL: ", new_jwt_token, len(new_jwt_token))
+            cursor.execute(sql, (new_jwt_token, user_id))  # Pass parameters to avoid SQL injection
+            
+            # Commit the transaction to save the changes
+            connection.commit()
+
+            # Check if any row was updated
+            if cursor.rowcount > 0:
+                return {"message": "JWT token updated successfully"}
+            else:
+                return {"message": "No matching user found, token not updated"}
+        except Exception as e:
+            print(f"Error in updating JWT token: {e}")
+            raise e
+        finally:
+            if connection:
+                connection.close()
+        
 
     def get_total_count(self, database_name: str, collection_name: str) -> int:
         connection = None

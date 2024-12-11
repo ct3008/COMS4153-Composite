@@ -1,11 +1,82 @@
 # composite.py
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from app.resources.composite_resource import CompositeResource
 from app.models.composite_model import Mealplan, DailyMealplan, WeeklyMealplan, Nutrition, Recipe, PaginatedResponse
+from app.services.service_factory import ServiceFactory
 
+from fastapi import HTTPException, APIRouter, Depends
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+from pydantic import BaseModel
+# res = ServiceFactory.get_service("MealplanResource")
+#     daily_mealplans = res.get_daily_meal_plans_by_date(date)
 
 router = APIRouter()
 resource = CompositeResource(config={})  # Pass actual config if needed
+
+SECRET_KEY = "your_secret_key"
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+# Simulated database
+fake_user_db = {
+    "ct3008": {"user_id": 1, "username": "ct3008", "password": "password"}
+}
+
+
+class LoginRequest(BaseModel):
+    username: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+router = APIRouter()
+
+def authenticate_user(username: str, password: str):
+    user = fake_user_db.get(username)
+    if user and user["password"] == password:
+        return user
+    return None
+
+def create_access_token(data: dict, expires_delta: timedelta = None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=15)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
+
+# @router.post("/login", response_model=Token)
+# async def login(user: User):
+#     db_user = authenticate_user(user.username, user.password)
+#     if not db_user:
+#         raise HTTPException(status_code=401, detail="Invalid username or password")
+#     access_token = create_access_token(data={"sub": db_user["user_id"]}, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+#     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/login", response_model=Token)
+async def login(request: LoginRequest):
+    # user = fake_user_db.get(request.username)
+    res = ServiceFactory.get_service("CompositeResource")
+    user = res.get_jwt_token(request.username)
+    print("USER: ", user)
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid username")
+
+    # Create the JWT
+    expiration = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    token_data = {"user_id": user["user_id"], "username": user["username"], "exp": expiration}
+    jwt_token = jwt.encode(token_data, SECRET_KEY, algorithm=ALGORITHM)
+    update_response = resource.update_jwt_token(user["user_id"], jwt_token)
+
+    # (Optional) Save JWT in database
+    user["jwt_token"] = jwt_token
+    print("jwt token: ", jwt_token)
+
+    return {"access_token": jwt_token, "token_type": "bearer"}
 
 @router.get("/composite/recipes/id/{recipe_id}", tags=["Recipes"])
 async def get_recipe(recipe_id: int):
@@ -31,13 +102,39 @@ async def get_nutrition_from_recipe(recipe_id: int):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/composite/mealplans/{mealplan_id}", tags=["Meal Plans"])
-async def get_mealplan(mealplan_id: int) -> Mealplan:
+# @router.get("/composite/mealplans/{mealplan_id}", tags=["Meal Plans"])
+# async def get_mealplan(mealplan_id: int) -> Mealplan:
+#     try:
+#         mealplan = resource.mealplan_client.get(f"/mealplans/{mealplan_id}")
+#         return mealplan
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/composite/mealplans/{meal_id}", tags=["Meal Plans"])
+async def get_mealplans(request: Request, meal_id: int):
+    user_id = request.state.user_id
+    print("user id: ", user_id)
     try:
-        mealplan = resource.mealplan_client.get(f"/mealplans/{mealplan_id}")
-        return mealplan
+        # Pass the `user_id` to the mealplan client
+        mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
+        return mealplans
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+# @router.get("/composite/mealplans/{mealplan_id}")
+# async def get_mealplans(request: Request,mealplan_id: int):
+#     print("composite called")
+#     user_id = request.state.user_id
+#     token = request.headers.get("Authorization")  # Extract the Authorization token
+#     print("user id: ", user_id)
+#     print("Authorization token: ", token)
+
+#     try:
+#         # Pass the `user_id` and `Authorization` token to the mealplan client
+#         headers = {"Authorization": token}  # Forward the token in the headers
+#         mealplans = resource.mealplan_client.get(f"mealplans/{mealplan_id}", headers=headers)
+#         return mealplans
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/composite/recipes/", tags=["Recipes"], response_model=Recipe)
