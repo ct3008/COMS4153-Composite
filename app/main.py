@@ -67,7 +67,7 @@ async def add_user_to_request(request: Request, call_next):
         return await call_next(request)
     path = request.url.path
     print("path: ", path)
-    if path.startswith("/composite"):
+    if path.startswith("/composites"):
         print("start with composite")
         token = request.headers.get("Authorization")
         print("token middleware: ", token)

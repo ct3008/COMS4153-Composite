@@ -86,6 +86,15 @@ async def get_recipe(recipe_id: int):
         return recipe
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.get("/composite/recipes/name/{recipe_name}", tags=["Recipes"])
+async def get_recipe(recipe_name: str):
+    try:
+        recipe = resource.recipe_client.get(f"recipes/name/{recipe_name}")
+        return recipe
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/composite/recipes", tags=["Recipes"])
@@ -95,6 +104,56 @@ async def get_recipe():
         return recipes
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/composite/recipes/", tags=["Recipes"], response_model=Recipe)
+async def create_recipe(recipe: Recipe):
+    try:
+        # print(recipe)
+        recipe = resource.recipe_client.post(f"recipes/", recipe.dict())
+        return recipe
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.put("/composite/recipes/id/{recipe_id}", tags=["Recipes"], response_model=Recipe)
+async def update_recipe(recipe_id: int, recipe: Recipe):
+    try:
+        # print(recipe)
+        recipe = resource.recipe_client.put(f"recipes/id/{recipe_id}", recipe.dict())
+        return recipe
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.put("/composite/recipes/name/{recipe_name}", tags=["Recipes"], response_model=Recipe)
+async def update_recipe(recipe_name: str, recipe: Recipe):
+    try:
+        # print(recipe)
+        recipe = resource.recipe_client.put(f"recipes/name/{recipe_name}", recipe.dict())
+        return recipe
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.delete("/composite/recipes/id/{recipe_id}", tags=["Recipes"])
+async def delete_recipe(recipe_id: int):
+    try:
+        print("try delete")
+        # Perform delete operation for the recipe
+        response = resource.recipe_client.delete(f"recipes/id/{recipe_id}")
+        print(response)
+        return {"message": "Recipe deleted successfully", "recipe_id": recipe_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.delete("/composite/recipes/name/{recipe_name}", tags=["Recipes"])
+async def delete_recipe(recipe_name: str):
+    try:
+        print("try delete")
+        # Perform delete operation for the recipe
+        response = resource.recipe_client.delete(f"recipes/name/{recipe_name}")
+        print(response)
+        return {"message": "Recipe deleted successfully", "recipe_id": recipe_name}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @router.get("/composite/nutrition/{nutrition_id}", tags=["Nutrition"])
 async def get_nutrition(nutrition_id: int):
@@ -111,50 +170,7 @@ async def get_nutrition_from_recipe(recipe_id: int):
         return nutrition_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-# @router.get("/composite/mealplans/{mealplan_id}", tags=["Meal Plans"])
-# async def get_mealplan(mealplan_id: int) -> Mealplan:
-#     try:
-#         mealplan = resource.mealplan_client.get(f"/mealplans/{mealplan_id}")
-#         return mealplan
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-@router.get("/composite/mealplans/{meal_id}", tags=["Meal Plans"])
-async def get_mealplans(request: Request, meal_id: int):
-    user_id = request.state.user_id
-    print("user id: ", user_id)
-    try:
-        # Pass the `user_id` to the mealplan client
-        mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
-        return mealplans
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-# @router.get("/composite/mealplans/{mealplan_id}")
-# async def get_mealplans(request: Request,mealplan_id: int):
-#     print("composite called")
-#     user_id = request.state.user_id
-#     token = request.headers.get("Authorization")  # Extract the Authorization token
-#     print("user id: ", user_id)
-#     print("Authorization token: ", token)
-
-#     try:
-#         # Pass the `user_id` and `Authorization` token to the mealplan client
-#         headers = {"Authorization": token}  # Forward the token in the headers
-#         mealplans = resource.mealplan_client.get(f"mealplans/{mealplan_id}", headers=headers)
-#         return mealplans
-#     except Exception as e:
-#         raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/composite/recipes/", tags=["Recipes"], response_model=Recipe)
-async def create_recipe(recipe: Recipe):
-    try:
-        # print(recipe)
-        recipe = resource.recipe_client.post(f"recipes/", recipe.dict())
-        return recipe
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    
 
 @router.post("/composite/nutrition/", tags=["Nutrition"], response_model=Nutrition)
 async def create_nutrition(nutrition: Nutrition):
@@ -198,24 +214,6 @@ async def create_nutrition_async(nutrition: Nutrition):
         print("Exception occurred:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
-
-@router.post("/composite/mealplans/", tags=["Meal Plans"], response_model=Mealplan)
-async def create_mealplan(mealplan: Mealplan):
-    try:
-        mealplan = resource.mealplan_client.post(f"mealplans/", mealplan.dict())
-        return mealplan
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@router.put("/composite/recipes/id/{recipe_id}", tags=["Recipes"], response_model=Recipe)
-async def update_recipe(recipe_id: int, recipe: Recipe):
-    try:
-        # print(recipe)
-        recipe = resource.recipe_client.put(f"recipes/id/{recipe_id}", recipe.dict())
-        return recipe
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 @router.put("/composite/nutrition/{nutrition_id}", tags=["Nutrition"], response_model=Nutrition)
 async def update_nutrition(nutrition_id: int, nutrition: Nutrition):
     try:
@@ -244,6 +242,77 @@ async def update_nutrition(nutrition_id: int, nutrition: Nutrition):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@router.delete("/composite/nutrition/{nutrition_id}", tags=["Nutrition"])
+async def delete_nutrition(nutrition_id: int):
+    try:
+        # Perform delete operation for the nutrition data
+        response = resource.nutrition_client.delete(f"nutrition/{nutrition_id}")
+        return {"message": "Nutrition data deleted successfully", "recipe_id": nutrition_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# @router.get("/composite/mealplans/{mealplan_id}", tags=["Meal Plans"])
+# async def get_mealplan(mealplan_id: int) -> Mealplan:
+#     try:
+#         mealplan = resource.mealplan_client.get(f"/mealplans/{mealplan_id}")
+#         return mealplan
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+# @router.get("/composite/mealplans/{mealplan_id}")
+# async def get_mealplans(request: Request,mealplan_id: int):
+#     print("composite called")
+#     user_id = request.state.user_id
+#     token = request.headers.get("Authorization")  # Extract the Authorization token
+#     print("user id: ", user_id)
+#     print("Authorization token: ", token)
+
+#     try:
+#         # Pass the `user_id` and `Authorization` token to the mealplan client
+#         headers = {"Authorization": token}  # Forward the token in the headers
+#         mealplans = resource.mealplan_client.get(f"mealplans/{mealplan_id}", headers=headers)
+#         return mealplans
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+
+
+
+
+@router.get("/composite/mealplans", tags=["Meal Plans"])
+async def get_all_mealplans(request: Request):
+
+    try:
+        # Pass the `user_id` to the mealplan client
+        # mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
+        mealplans = resource.mealplan_client.get(f"mealplans")
+        return mealplans
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Mealplan Functions
+@router.get("/composite/mealplans/{meal_id}", tags=["Meal Plans"])
+async def get_mealplans(request: Request, meal_id: int):
+    # user_id = request.state.user_id
+    # print("user id: ", user_id)
+    try:
+        # Pass the `user_id` to the mealplan client
+        # mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
+        mealplans = resource.mealplan_client.get(f"mealplans/{meal_id}")
+        return mealplans
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.post("/composite/mealplans/", tags=["Meal Plans"], response_model=Mealplan)
+async def create_mealplan(mealplan: Mealplan):
+    try:
+        mealplan = resource.mealplan_client.post(f"mealplans/", mealplan.dict())
+        return mealplan
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
 
 @router.put("/composite/mealplans/{meal_id}", tags=["Meal Plans"], response_model=Mealplan)
 async def update_mealplan(meal_id: int, mealplan: Mealplan):
@@ -254,25 +323,6 @@ async def update_mealplan(meal_id: int, mealplan: Mealplan):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.delete("/composite/recipes/id/{recipe_id}", tags=["Recipes"])
-async def delete_recipe(recipe_id: int):
-    try:
-        print("try delete")
-        # Perform delete operation for the recipe
-        response = resource.recipe_client.delete(f"recipes/id/{recipe_id}")
-        print(response)
-        return {"message": "Recipe deleted successfully", "recipe_id": recipe_id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.delete("/composite/nutrition/{nutrition_id}", tags=["Nutrition"])
-async def delete_nutrition(nutrition_id: int):
-    try:
-        # Perform delete operation for the nutrition data
-        response = resource.nutrition_client.delete(f"nutrition/{nutrition_id}")
-        return {"message": "Nutrition data deleted successfully", "recipe_id": nutrition_id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 @router.delete("/composite/mealplans/{meal_id}", tags=["Meal Plans"])
 async def delete_mealplan(meal_id: int):
@@ -280,6 +330,118 @@ async def delete_mealplan(meal_id: int):
         # Perform delete operation for the meal plan
         response = resource.mealplan_client.delete(f"mealplans/{meal_id}")
         return {"message": "Meal plan deleted successfully", "meal_id": meal_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+# ---------------- Daily Functions
+@router.get("/composite/daily-mealplans/{day_plan_id}", tags=["Meal Plans"])
+async def get_daily_mealplans(request: Request, day_plan_id: int):
+    # user_id = request.state.user_id
+    # print("user id: ", user_id)
+    try:
+        # Pass the `user_id` to the mealplan client
+        # mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
+        mealplans = resource.mealplan_client.get(f"daily-mealplans/{day_plan_id}")
+        return mealplans
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.post("/composite/daily-mealplans", tags=["Meal Plans"])
+async def create_daily_mealplan(daily_mealplan: DailyMealplan):
+    try:
+        mealplan = resource.mealplan_client.post(f"daily-mealplans", daily_mealplan.dict())
+        return mealplan
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+@router.put("/daily-mealplans/{day_plan_id}", tags=["Meal Plans"])
+async def update_daily_mealplan_by_id(day_plan_id: int, daily_mealplan: DailyMealplan):
+    try:
+        mealplan = resource.mealplan_client.put(f"daily-mealplans/{day_plan_id}", daily_mealplan.dict())
+        return mealplan
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.delete("/composite/daily-mealplans/{day_plan_id}", tags=["Meal Plans"])
+async def delete_daily_mealplan(day_plan_id: int):
+    try:
+        # Perform delete operation for the meal plan
+        response = resource.mealplan_client.delete(f"daily-mealplans/{day_plan_id}")
+        return {"message": "Meal plan deleted successfully", "day plan": day_plan_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+# ---------------- Weekly Functions
+
+@router.get("/composite/weekly-mealplans/{week_plan_id}/daily-mealplans", tags=["Meal Plans"])
+async def get_daily_mealplans_by_week(request: Request, week_plan_id: int):
+    # user_id = request.state.user_id
+    # print("user id: ", user_id)
+    try:
+        # Pass the `user_id` to the mealplan client
+        # mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
+        result = resource.mealplan_client.get(f"weekly-mealplans/{week_plan_id}/daily-mealplans")
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/composite/weekly-mealplans", tags=["Meal Plans"])
+async def get_daily_meal_plans_by_date(request: Request, date: str):
+    """
+    Fetch daily meal plans by the date passed as a query parameter.
+    """
+    try:
+        # Pass the `date` query parameter to your data service or logic
+        result = resource.mealplan_client.get(f"weekly-mealplans?date={date}")
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+    
+@router.get("/composite/weekly-mealplans/{week_plan_id}", tags=["Meal Plans"])
+async def get_weekly_mealplans(request: Request, week_plan_id: int):
+    # user_id = request.state.user_id
+    # print("user id: ", user_id)
+    try:
+        # Pass the `user_id` to the mealplan client
+        # mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
+        mealplans = resource.mealplan_client.get(f"weekly-mealplans/{week_plan_id}")
+        return mealplans
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+@router.post("/composite/weekly-mealplans", tags=["Meal Plans"])
+async def create_weekly_mealplan(weekly_mealplan: WeeklyMealplan):
+    try:
+        mealplan = resource.mealplan_client.post(f"weekly-mealplans", weekly_mealplan.dict())
+        return mealplan
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+
+
+@router.put("/weekly-mealplans/{week_plan_id}", tags=["Meal Plans"])
+async def update_weekly_mealplan_by_id(week_plan_id: int, weekly_mealplan: WeeklyMealplan):
+    try:
+        mealplan = resource.mealplan_client.put(f"weekly-mealplans/{week_plan_id}", weekly_mealplan.dict())
+        return mealplan
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+
+@router.delete("/composite/weekly-mealplans/{week_plan_id}", tags=["Meal Plans"])
+async def delete_weekly_mealplan_by_id(week_plan_id: int):
+    try:
+        # Perform delete operation for the meal plan
+        response = resource.mealplan_client.delete(f"weekly-mealplans/{week_plan_id}")
+        return {"message": "Meal plan deleted successfully", "day plan": week_plan_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
