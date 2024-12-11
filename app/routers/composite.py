@@ -1,5 +1,5 @@
 # composite.py
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Query
 from app.resources.composite_resource import CompositeResource
 from app.models.composite_model import Mealplan, DailyMealplan, WeeklyMealplan, Nutrition, Recipe, PaginatedResponse
 from app.services.service_factory import ServiceFactory
@@ -98,18 +98,22 @@ async def get_recipe(recipe_name: str):
 
 
 @router.get("/composite/recipes", tags=["Recipes"])
-async def get_recipe():
+async def get_recipes(skip: int = Query(0, ge=0), limit: int = Query(10, gt=0)):
+    """
+    Retrieve recipes with pagination parameters skip and limit.
+    """
     try:
-        recipes = resource.recipe_client.get(f"recipes")
+        # Forward the query parameters to the recipe client
+        recipes = resource.recipe_client.get(f"recipes?skip={skip}&limit={limit}")
         return recipes
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
-@router.post("/composite/recipes/", tags=["Recipes"], response_model=Recipe)
+@router.post("/composite/recipes", tags=["Recipes"], response_model=Recipe)
 async def create_recipe(recipe: Recipe):
     try:
         # print(recipe)
-        recipe = resource.recipe_client.post(f"recipes/", recipe.dict())
+        recipe = resource.recipe_client.post(f"recipes", recipe.dict())
         return recipe
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
