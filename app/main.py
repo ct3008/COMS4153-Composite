@@ -20,10 +20,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # You can specify the origin here, e.g., ["http://localhost:4200"]
+    allow_origins=["*"],  # Specify your frontend origin
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, DELETE, etc.)
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],  # Explicitly allow methods
+    allow_headers=["*"],  # Explicitly allow headers
 )
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
@@ -49,9 +49,22 @@ def verify_token(token: str = Depends(oauth2_scheme)):
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid authentication")
 
+@app.options("/{rest_of_path:path}")
+async def preflight_handler(rest_of_path: str):
+    return Response(
+        status_code=200,
+        headers={
+            "Access-Control-Allow-Origin": "http://localhost:4200",
+            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Authorization, Content-Type",
+        },
+    )
+
 @app.middleware("http")
 async def add_user_to_request(request: Request, call_next):
-    print("request: ", request)
+    print("request: ", request.headers)
+    if request.method == "OPTIONS":
+        return await call_next(request)
     path = request.url.path
     print("path: ", path)
     if path.startswith("/composite"):

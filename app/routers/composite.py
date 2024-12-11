@@ -57,6 +57,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 #     access_token = create_access_token(data={"sub": db_user["user_id"]}, expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
 #     return {"access_token": access_token, "token_type": "bearer"}
 
+
 @router.post("/login", response_model=Token)
 async def login(request: LoginRequest):
     # user = fake_user_db.get(request.username)
@@ -83,6 +84,15 @@ async def get_recipe(recipe_id: int):
     try:
         recipe = resource.recipe_client.get(f"recipes/id/{recipe_id}")
         return recipe
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/composite/recipes", tags=["Recipes"])
+async def get_recipe():
+    try:
+        recipes = resource.recipe_client.get(f"recipes")
+        return recipes
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
