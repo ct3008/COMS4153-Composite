@@ -1,8 +1,10 @@
 # composite.py
-from fastapi import APIRouter, HTTPException, Request, Query
+from fastapi import APIRouter, HTTPException, Request, Query, Response
 from app.resources.composite_resource import CompositeResource
 from app.models.composite_model import Mealplan, DailyMealplan, WeeklyMealplan, Nutrition, Recipe, PaginatedResponse, Alternatives
 from app.services.service_factory import ServiceFactory
+from typing import Optional
+from enum import Enum
 
 from fastapi import HTTPException, APIRouter, Depends
 from datetime import datetime, timedelta
@@ -30,6 +32,16 @@ class LoginRequest(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+class DietType(str, Enum):
+    high_protein = "high protein"
+    gluten_free = "gluten free"
+    low_carb = "low carb"
+    vegan = "vegan"
+    keto = "keto"
+    low_sodium = "low sodium"
+    vegetarian = "vegetarian"
+    paleo = "paleo"
 
 router = APIRouter()
 
@@ -132,8 +144,9 @@ async def create_recipe(recipe: Recipe):
     
 @router.put("/composite/recipes/id/{recipe_id}", tags=["Recipes"], response_model=Recipe)
 async def update_recipe(recipe_id: int, recipe: Recipe):
+    print(recipe)
     try:
-        # print(recipe)
+        print(recipe)
         recipe = resource.recipe_client.put(f"recipes/id/{recipe_id}", recipe.dict())
         return recipe
     except Exception as e:
@@ -172,6 +185,45 @@ async def delete_recipe(recipe_name: str):
 
 
 # NUTRITION
+
+@router.get("/composite/nutrition", tags=["Nutrition"])
+async def get_ingredient_nutrition(
+        response: Response,
+        page: int = Query(1, ge=1, description="Page number starting from 1"),
+        page_size: int = Query(10, ge=1, description="Number of items per page"),
+        min_calories: Optional[float] = Query(None, description="Minimum calorie value"),
+        max_calories: Optional[float] = Query(None, description="Maximum calorie value"),
+        diet_type: Optional[DietType] = Query(None, description="Diet type filter"),
+):
+    """
+    Proxy for the nutrition endpoint, replicating its functionality.
+    """
+    try:
+        # Build the query parameters dynamically
+        query_params = {
+            "page": page,
+            "page_size": page_size,
+        }
+        if min_calories is not None:
+            query_params["min_calories"] = min_calories
+        if max_calories is not None:
+            query_params["max_calories"] = max_calories
+        if diet_type is not None:
+            query_params["diet_type"] = diet_type.value  # Extract enum value
+
+        # Make the request to the underlying nutrition endpoint
+        nutrition_info = resource.nutrition_client.get(
+            "nutrition", params=query_params
+        )
+        print("nutrition info: ", nutrition_info)
+
+        # Proxy Link headers for pagination
+        # if "Link" in nutrition_info.headers:
+        #     response.headers["Link"] = nutrition_info.headers["Link"]
+
+        return nutrition_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/composite/nutrition/{ingredient_id}", tags=["Nutrition"])
 async def get_ingredient_nutrition(ingredient_id: int):
