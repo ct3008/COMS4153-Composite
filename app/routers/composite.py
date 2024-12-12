@@ -1,7 +1,7 @@
 # composite.py
 from fastapi import APIRouter, HTTPException, Request, Query
 from app.resources.composite_resource import CompositeResource
-from app.models.composite_model import Mealplan, DailyMealplan, WeeklyMealplan, Nutrition, Recipe, PaginatedResponse
+from app.models.composite_model import Mealplan, DailyMealplan, WeeklyMealplan, Nutrition, Recipe, PaginatedResponse, Alternatives
 from app.services.service_factory import ServiceFactory
 
 from fastapi import HTTPException, APIRouter, Depends
@@ -33,21 +33,21 @@ class Token(BaseModel):
 
 router = APIRouter()
 
-def authenticate_user(username: str, password: str):
-    user = fake_user_db.get(username)
-    if user and user["password"] == password:
-        return user
-    return None
+# def authenticate_user(username: str, password: str):
+#     user = fake_user_db.get(username)
+#     if user and user["password"] == password:
+#         return user
+#     return None
 
-def create_access_token(data: dict, expires_delta: timedelta = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
+# def create_access_token(data: dict, expires_delta: timedelta = None):
+#     to_encode = data.copy()
+#     if expires_delta:
+#         expire = datetime.utcnow() + expires_delta
+#     else:
+#         expire = datetime.utcnow() + timedelta(minutes=15)
+#     to_encode.update({"exp": expire})
+#     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+#     return encoded_jwt
 
 # @router.post("/login", response_model=Token)
 # async def login(user: User):
@@ -171,31 +171,134 @@ async def delete_recipe(recipe_name: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/composite/nutrition/{nutrition_id}", tags=["Nutrition"])
-async def get_nutrition(nutrition_id: int):
-    try:
-        nutrition_info = resource.nutrition_client.get(f"nutrition/{nutrition_id}")
-        return nutrition_info
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-@router.get("/composite/nutrition/recipe/{recipe_id}", tags=["Nutrition"])
-async def get_nutrition_from_recipe(recipe_id: int):
-    try:
-        nutrition_info = resource.nutrition_client.get(f"nutrition/recipe/{recipe_id}")
-        return nutrition_info
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
+# NUTRITION
 
-@router.post("/composite/nutrition/", tags=["Nutrition"], response_model=Nutrition)
-async def create_nutrition(nutrition: Nutrition):
+@router.get("/composite/nutrition/{ingredient_id}", tags=["Nutrition"])
+async def get_ingredient_nutrition(ingredient_id: int):
     try:
-        nutrition = resource.nutrition_client.post(f"nutrition/", nutrition.dict())
-        print(nutrition)
+        nutrition_info = resource.nutrition_client.get(f"nutrition/{ingredient_id}")
+        return nutrition_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/composite/nutrition/alternatives/{ingredient_id}", tags=["Nutrition"])
+async def get_alternatives_from_ingredient(ingredient_id: int):
+    try:
+        nutrition_info = resource.nutrition_client.get(f"nutrition/alternatives/{ingredient_id}")
+        return nutrition_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get("/composite/nutrition/alternatives/recipe/{recipe_id}", tags=["Nutrition"])
+async def get_alternatives_from_recipe(recipe_id: int):
+    try:
+        nutrition_info = resource.nutrition_client.get(f"nutrition/alternatives/recipe/{recipe_id}")
+        return nutrition_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/composite/nutrition/recipe/stats/{recipe_id}", tags=["Nutrition"])
+async def get_ingredient_nutrition(recipe_id: int):
+    try:
+        nutrition_info = resource.nutrition_client.get(f"nutrition/recipe/stats/{recipe_id}")
+        return nutrition_info
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/composite/nutrition/alternative", tags=["Nutrition"], response_model=Alternatives)
+async def create_alternative(alternatives: Alternatives):
+    try:
+        nutrition = resource.nutrition_client.post(f"nutrition/alternative", alternatives.dict())
+        print("ingredient: ", nutrition)
         return nutrition["data"]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.post("/composite/nutrition/ingredient", tags=["Nutrition"], response_model=Nutrition)
+async def create_nutrition(nutrition: Nutrition):
+    try:
+        nutrition = resource.nutrition_client.post(f"nutrition/ingredient", nutrition.dict())
+        print("recipe: ", nutrition)
+        return nutrition["data"]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+# @router.get("/composite/nutrition/", tags=["Nutrition"], response_model=Nutrition)
+# async def get_all_nutrition():
+#     try:
+#         nutrition = resource.nutrition_client.get(f"nutrition/")
+#         # print(nutrition)
+#         # return nutrition["data"]
+#         return nutrition
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+    
+
+# @router.post("/composite/nutrition/alternative", tags=["Nutrition"], response_model=Nutrition)
+# async def create_nutrition(nutrition: Nutrition):
+#     try:
+#         nutrition = resource.nutrition_client.post(f"nutrition/", nutrition.dict())
+#         print(nutrition)
+#         return nutrition["data"]
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+    
+
+    
+
+@router.put("/composite/nutrition/{ingredient_id}", tags=["Nutrition"], response_model=Nutrition)
+async def update_nutrition(ingredient_id: int, nutrition: Nutrition):
+    try:
+        # Send the PUT request to the nutrition microservice
+        response = resource.nutrition_client.put(f"nutrition/{ingredient_id}", nutrition.dict())
+
+        # Extract the data from the response and structure it into the appropriate format
+        # nutrition_data = response["data"][0]  # Assuming the data is a list, take the first item
+        return response["data"]
+        # # Map the response data to the Nutrition model
+        # updated_nutrition = Nutrition(
+        #     recipe_id=nutrition_data[1],  # Example: assuming the first element is the id
+        #     calories=nutrition_data[2],
+        #     carbohydrates=nutrition_data[3],
+        #     protein=nutrition_data[4],
+        #     fiber=nutrition_data[5],
+        #     fat=nutrition_data[6],
+        #     sugar=nutrition_data[7],
+        #     sodium=nutrition_data[8]
+        # )
+
+        # return updated_nutrition  # Return the structured Nutrition object
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/composite/nutrition/{ingredient_id}", tags=["Nutrition"])
+async def delete_nutrition(ingredient_id: int):
+    try:
+        # Perform delete operation for the nutrition data
+        response = resource.nutrition_client.delete(f"nutrition/{ingredient_id}")
+        return {"message": "Nutrition data deleted successfully", "recipe_id": ingredient_id}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# OLD NUTRITION
+# @router.get("/composite/nutrition/{nutrition_id}", tags=["Nutrition"])
+# async def get_nutrition(nutrition_id: int):
+#     try:
+#         nutrition_info = resource.nutrition_client.get(f"nutrition/{nutrition_id}")
+#         return nutrition_info
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+    
+# @router.get("/composite/nutrition/recipe/{recipe_id}", tags=["Nutrition"])
+# async def get_nutrition_from_recipe(recipe_id: int):
+#     try:
+#         nutrition_info = resource.nutrition_client.get(f"nutrition/recipe/{recipe_id}")
+#         return nutrition_info
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
+    
+
+
     
 @router.post("/composite/nutrition/callback", tags=["Nutrition"])
 async def nutrition_creation_callback(data: dict):
@@ -230,42 +333,35 @@ async def create_nutrition_async(nutrition: Nutrition):
         print("Exception occurred:", e)
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.put("/composite/nutrition/{nutrition_id}", tags=["Nutrition"], response_model=Nutrition)
-async def update_nutrition(nutrition_id: int, nutrition: Nutrition):
-    try:
-        # Send the PUT request to the nutrition microservice
-        response = resource.nutrition_client.put(f"nutrition/{nutrition_id}", nutrition.dict())
+# @router.put("/composite/nutrition/{nutrition_id}", tags=["Nutrition"], response_model=Nutrition)
+# async def update_nutrition(nutrition_id: int, nutrition: Nutrition):
+#     try:
+#         # Send the PUT request to the nutrition microservice
+#         response = resource.nutrition_client.put(f"nutrition/{nutrition_id}", nutrition.dict())
 
-        # Extract the data from the response and structure it into the appropriate format
-        nutrition_data = response["data"][0]  # Assuming the data is a list, take the first item
+#         # Extract the data from the response and structure it into the appropriate format
+#         nutrition_data = response["data"][0]  # Assuming the data is a list, take the first item
 
-        # Map the response data to the Nutrition model
-        updated_nutrition = Nutrition(
-            recipe_id=nutrition_data[1],  # Example: assuming the first element is the id
-            calories=nutrition_data[2],
-            carbohydrates=nutrition_data[3],
-            protein=nutrition_data[4],
-            fiber=nutrition_data[5],
-            fat=nutrition_data[6],
-            sugar=nutrition_data[7],
-            sodium=nutrition_data[8],
-            ingredient_alternatives=nutrition_data[9],
-            diet_type=nutrition_data[10],
-            goal=nutrition_data[11]
-        )
+#         # Map the response data to the Nutrition model
+#         updated_nutrition = Nutrition(
+#             recipe_id=nutrition_data[1],  # Example: assuming the first element is the id
+#             calories=nutrition_data[2],
+#             carbohydrates=nutrition_data[3],
+#             protein=nutrition_data[4],
+#             fiber=nutrition_data[5],
+#             fat=nutrition_data[6],
+#             sugar=nutrition_data[7],
+#             sodium=nutrition_data[8],
+#             ingredient_alternatives=nutrition_data[9],
+#             diet_type=nutrition_data[10],
+#             goal=nutrition_data[11]
+#         )
 
-        return updated_nutrition  # Return the structured Nutrition object
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+#         return updated_nutrition  # Return the structured Nutrition object
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=str(e))
 
-@router.delete("/composite/nutrition/{nutrition_id}", tags=["Nutrition"])
-async def delete_nutrition(nutrition_id: int):
-    try:
-        # Perform delete operation for the nutrition data
-        response = resource.nutrition_client.delete(f"nutrition/{nutrition_id}")
-        return {"message": "Nutrition data deleted successfully", "recipe_id": nutrition_id}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+
 
 # @router.get("/composite/mealplans/{mealplan_id}", tags=["Meal Plans"])
 # async def get_mealplan(mealplan_id: int) -> Mealplan:
