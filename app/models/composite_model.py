@@ -75,24 +75,35 @@ class Mealplan(BaseModel):
             }
         }
 
-
-class Nutrition(BaseModel):
-    recipe_id: int
-    calories: float
-    carbohydrates: float
-    protein: float
-    fiber: float
-    fat: float
-    sugar: float
-    sodium: float
-    ingredient_alternatives: str
-    diet_type: str
-    goal: str
-
+class Alternatives(BaseModel):
+    # recipe_id: int
+    # calories: float
+    # carbohydrates: float
+    # protein: float
+    # fiber: float
+    # fat: float
+    # sugar: float
+    # sodium: float
+    # ingredient_alternatives: str
+    # diet_type: str
+    # goal: str
+    alternative_id: int
+    ingredient_id: int
+    alternative_name: Optional[str] = None
+    calories: Optional[float] = None
+    carbohydrates: Optional[float] = None
+    protein: Optional[float] = None
+    fiber: Optional[float] = None
+    fat: Optional[float] = None
+    sugar: Optional[float] = None
+    sodium: Optional[float] = None
+    diet_type: Optional[str] = None
     class Config:
         json_schema_extra = {
             "example": {
-                "recipe_id": 1,
+                "alternative_id": 1,
+                "ingredient_id": 1,
+                "alternative_name": "Tofu",
                 "calories": 400,
                 "carbohydrates": 45.0,
                 "protein": 20.5,
@@ -100,13 +111,63 @@ class Nutrition(BaseModel):
                 "fat": 15.0,
                 "sugar": 8.0,
                 "sodium": 230,
-                "ingredient_alternatives": "mayo -> yogurt",
-                "diet_type": "high_protein",
-                "goal": "general_health"
+                "diet_type": "high protein"
             }
         }
 
+class Nutrition(BaseModel):
+    # recipe_id: int
+    # calories: float
+    # carbohydrates: float
+    # protein: float
+    # fiber: float
+    # fat: float
+    # sugar: float
+    # sodium: float
+    # ingredient_alternatives: str
+    # diet_type: str
+    # goal: str
+    ingredient_id: Optional[int] = None
+    calories: Optional[int] = None
+    carbohydrates: Optional[float] = None
+    protein: Optional[float] = None
+    fiber: Optional[float] = None
+    fat: Optional[float] = None
+    sugar: Optional[float] = None
+    sodium: Optional[float] = None
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "ingredient_id": 1,
+                "calories": 400,
+                "carbohydrates": 45.0,
+                "protein": 20.5,
+                "fiber": 8.0,
+                "fat": 15.0,
+                "sugar": 8.0,
+                "sodium": 231
+            }
+        }
+
+    # class Config:
+    #     json_schema_extra = {
+    #         "example": {
+    #             "recipe_id": 1,
+    #             "calories": 400,
+    #             "carbohydrates": 45.0,
+    #             "protein": 20.5,
+    #             "fiber": 8.0,
+    #             "fat": 15.0,
+    #             "sugar": 8.0,
+    #             "sodium": 230,
+    #             "ingredient_alternatives": "mayo -> yogurt",
+    #             "diet_type": "high_protein",
+    #             "goal": "general_health"
+    #         }
+    #     }
+
 class Ingredient(BaseModel):
+    ingredient_id: int
     ingredient_name: str
     quantity: str
 
@@ -128,22 +189,27 @@ class Recipe(BaseModel):
                 "name": "Avocado Toast",
                 "ingredients": [
                     {
+                        "ingredient_id": 148,
                         "ingredient_name": "Avocado",
                         "quantity": "1 large"
                     },
                     {
+                        "ingredient_id": 149,
                         "ingredient_name": "Bread",
                         "quantity": "2 slices"
                     },
                     {
+                        "ingredient_id": 150,
                         "ingredient_name": "Lime",
                         "quantity": "1/2"
                     },
                     {
+                        "ingredient_id": 151,
                         "ingredient_name": "Olive oil",
                         "quantity": "1 tbsp"
                     },
                     {
+                        "ingredient_id": 152,
                         "ingredient_name": "Salt",
                         "quantity": "1/4 tsp"
                     }
