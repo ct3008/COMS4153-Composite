@@ -55,7 +55,7 @@ async def preflight_handler(rest_of_path: str):
         status_code=200,
         headers={
             "Access-Control-Allow-Origin": "http://localhost:4200",
-            "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
             "Access-Control-Allow-Headers": "Authorization, Content-Type",
         },
     )

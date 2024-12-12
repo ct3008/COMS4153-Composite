@@ -108,6 +108,18 @@ async def get_recipes(skip: int = Query(0, ge=0), limit: int = Query(10, gt=0)):
         return recipes
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/composite/recipes/allrecipes", tags=["Recipes"])
+async def get_recipes():
+    """
+    Retrieve all recipes.
+    """
+    try:
+        # Forward the query parameters to the recipe client
+        recipes = resource.recipe_client.get(f"recipes?skip=0&limit=100")
+        return recipes
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
 @router.post("/composite/recipes", tags=["Recipes"], response_model=Recipe)
 async def create_recipe(recipe: Recipe):
@@ -303,6 +315,7 @@ async def get_mealplans(request: Request, meal_id: int):
         # Pass the `user_id` to the mealplan client
         # mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
         mealplans = resource.mealplan_client.get(f"mealplans/{meal_id}")
+        print(mealplans)
         return mealplans
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -315,7 +328,6 @@ async def create_mealplan(mealplan: Mealplan):
         return mealplan
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-    
 
 
 @router.put("/composite/mealplans/{meal_id}", tags=["Meal Plans"], response_model=Mealplan)
@@ -346,6 +358,7 @@ async def get_daily_mealplans(request: Request, day_plan_id: int):
         # Pass the `user_id` to the mealplan client
         # mealplans = resource.mealplan_client.get(f"mealplans/{user_id}/{meal_id}")
         mealplans = resource.mealplan_client.get(f"daily-mealplans/{day_plan_id}")
+        print(mealplans)
         return mealplans
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -361,7 +374,7 @@ async def create_daily_mealplan(daily_mealplan: DailyMealplan):
     
 
 
-@router.put("/daily-mealplans/{day_plan_id}", tags=["Meal Plans"])
+@router.put("/composite/daily-mealplans/{day_plan_id}", tags=["Meal Plans"])
 async def update_daily_mealplan_by_id(day_plan_id: int, daily_mealplan: DailyMealplan):
     try:
         mealplan = resource.mealplan_client.put(f"daily-mealplans/{day_plan_id}", daily_mealplan.dict())
