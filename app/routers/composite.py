@@ -5,6 +5,8 @@ from app.models.composite_model import Mealplan, DailyMealplan, WeeklyMealplan, 
 from app.services.service_factory import ServiceFactory
 from typing import Optional
 from enum import Enum
+import boto3
+import json
 
 from fastapi import HTTPException, APIRouter, Depends
 from datetime import datetime, timedelta
@@ -21,10 +23,16 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Simulated database
-fake_user_db = {
-    "ct3008": {"user_id": 1, "username": "ct3008", "password": "password"}
-}
+# fake_user_db = {
+#     "ct3008": {"user_id": 1, "username": "ct3008", "password": "password"}
+# }
 
+# Initialize the SNS client
+sns_client = boto3.client("sns", region_name="us-east-1")
+lambda_client = boto3.client("lambda", region_name="us-east-1")
+
+# ARN for your SNS topic
+RECIPE_ALERT_SNS_ARN = "arn:aws:sns:us-east-1:108782072640:RecipeCreatedAlert"
 
 class LoginRequest(BaseModel):
     username: str
@@ -132,15 +140,133 @@ async def get_recipes():
         return recipes
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+def pub_sub_update(recipe):
+    
+    ingredients = recipe.get("ingredients", [])
+    if not ingredients:
+        print("No ingredients found in recipe.")
+        return
+    nutritions = {}
+    all_alternatives = {}
+
+    for item in ingredients:
+        ingredient_id = item.get('ingredient_id')
+        print("Processing ingredient_id: ", ingredient_id)
+
+        if not ingredient_id:
+            continue
+
+        # Fetch mixed data for the ingredient
+        mixed_data = resource.nutrition_client.get(f"nutrition/duplicates/{ingredient_id}")
+        print(f"Fetched mixed data for ingredient_id {ingredient_id}:", mixed_data)
+        if mixed_data:
+            temp_ingredient_id = mixed_data[0].get('ingredient_id')
+        else:
+            continue
+
+        # Filter out nutrition data (unique rows by ingredient_id)
+        nutrition_data = next(
+            (entry for entry in mixed_data if entry.get("ingredient_id") == temp_ingredient_id),
+            None
+        )
+        if not nutrition_data:
+            print(f"No nutrition data found for ingredient_id {temp_ingredient_id}")
+            continue
+        
+        nutrition_data = {
+            "ingredient_id": ingredient_id,
+            "calories": nutrition_data.get("nutrition_calories"),
+            "carbohydrates": nutrition_data.get("nutrition_carbohydrates"),
+            "protein": nutrition_data.get("nutrition_protein"),
+            "fiber": nutrition_data.get("nutrition_fiber"),
+            "fat": nutrition_data.get("nutrition_fat"),
+            "sugar": nutrition_data.get("nutrition_sugar"),
+            "sodium": nutrition_data.get("nutrition_sodium"),
+        }
+
+        nutritions[ingredient_id] = nutrition_data
+        nutrition = Nutrition(**nutrition_data)
+        
+        resource.nutrition_client.post("nutrition/ingredient", data=nutrition.dict())
+        print(f"Posted Nutrition data for ingredient_id {ingredient_id}:", nutrition.dict())
+        # nutritions[ingredient_id] = nutrition_data
+
+        # Filter and process alternatives for the ingredient
+        alternatives = [
+            entry for entry in mixed_data
+            if entry.get("ingredient_id") == temp_ingredient_id and entry.get("alternative_id")
+        ]
+
+        # all_alternatives[ingredient_id] = alternatives
+        all_alternatives[ingredient_id] = []
+        for alt in alternatives:
+            alternative_data_dict = {
+                "alternative_id": alt["alternative_id"],
+                "ingredient_id": ingredient_id,
+                "alternative_name": alt.get("alternative_name"),
+                "calories": alt.get("calories"),
+                "carbohydrates": alt.get("carbohydrates"),
+                "protein": alt.get("protein"),
+                "fiber": alt.get("fiber"),
+                "fat": alt.get("fat"),
+                "sugar": alt.get("sugar"),
+                "sodium": alt.get("sodium"),
+                "diet_type": alt.get("diet_type"),
+            }
+            all_alternatives[ingredient_id].append(alternative_data_dict)
+            alternative_data = Alternatives(**alternative_data_dict)
+            
+            resource.nutrition_client.post("nutrition/alternative", data=alternative_data.dict())
+            print(f"Posted Alternative data for ingredient_id {ingredient_id}:", alternative_data.dict())
+
+   
+    payload = {
+        "recipe_id": recipe['recipe_id'],
+        "recipe_name": recipe.get('name', 'Unknown Recipe'),
+        "ingredients": recipe.get("ingredients", {}),
+        "new_nutrition": nutritions,
+        "alternatives": all_alternatives
+    }
+    # print("payload: ", payload)
+
+    try:
+        # Invoke the Lambda function
+        response = lambda_client.invoke(
+            FunctionName="arn:aws:lambda:us-east-1:108782072640:function:recipe_alerts",
+            InvocationType="RequestResponse",  # Ensures synchronous invocation
+            Payload=json.dumps(payload)
+        )
+        
+        # Process the Lambda response
+        lambda_response = json.load(response['Payload'])
+        print("Lambda response:", lambda_response)
+        
+        # Additional fallback SNS notification (optional)
+        # message = f"New recipe created: {recipe['name']} (ID: {recipe['recipe_id']})"
+        # sns_response = sns_client.publish(
+        #     TopicArn=RECIPE_ALERT_SNS_ARN,
+        #     Message=message,
+        #     Subject="New Recipe Alert"
+        # )
+        # print("Fallback SNS publish response:", sns_response)
+    except Exception as e:
+        print("Error invoking Lambda or publishing SNS alert:", e)
     
 @router.post("/composite/recipes", tags=["Recipes"], response_model=Recipe)
 async def create_recipe(recipe: Recipe):
     try:
         # print(recipe)
         recipe = resource.recipe_client.post(f"recipes", recipe.dict())
+        pub_sub_update(recipe)
+        
+        
+
         return recipe
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
     
 @router.put("/composite/recipes/id/{recipe_id}", tags=["Recipes"], response_model=Recipe)
 async def update_recipe(recipe_id: int, recipe: Recipe):

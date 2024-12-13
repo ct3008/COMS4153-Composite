@@ -76,17 +76,6 @@ class Mealplan(BaseModel):
         }
 
 class Alternatives(BaseModel):
-    # recipe_id: int
-    # calories: float
-    # carbohydrates: float
-    # protein: float
-    # fiber: float
-    # fat: float
-    # sugar: float
-    # sodium: float
-    # ingredient_alternatives: str
-    # diet_type: str
-    # goal: str
     alternative_id: int
     ingredient_id: int
     alternative_name: Optional[str] = None
@@ -116,18 +105,7 @@ class Alternatives(BaseModel):
         }
 
 class Nutrition(BaseModel):
-    # recipe_id: int
-    # calories: float
-    # carbohydrates: float
-    # protein: float
-    # fiber: float
-    # fat: float
-    # sugar: float
-    # sodium: float
-    # ingredient_alternatives: str
-    # diet_type: str
-    # goal: str
-    ingredient_id: Optional[int] = None
+    ingredient_id: int
     calories: Optional[int] = None
     carbohydrates: Optional[float] = None
     protein: Optional[float] = None

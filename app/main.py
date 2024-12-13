@@ -32,9 +32,9 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Simulated database
-fake_users_db = {
-    "ct3008": {"user_id": 1, "username": "ct3008", "password": "password"}
-}
+# fake_users_db = {
+#     "ct3008": {"user_id": 1, "username": "ct3008", "password": "password"}
+# }
 
 def verify_token(token: str = Depends(oauth2_scheme)):
     print("Verifying token: ", token)
