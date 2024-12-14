@@ -11,6 +11,8 @@ from jose import jwt, JWTError
 from fastapi import Depends, HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from contextvars import ContextVar
+from app.log_requests_middleware import LogRequestsMiddleware
+from app.correlation_id_middleware import CorrelationIdMiddleware
 
 
 logging.basicConfig(level=logging.INFO)
@@ -25,6 +27,9 @@ app.add_middleware(
     allow_methods=["*"],  # Explicitly allow methods
     allow_headers=["*"],  # Explicitly allow headers
 )
+
+app.add_middleware(LogRequestsMiddleware)
+app.add_middleware(CorrelationIdMiddleware)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 SECRET_KEY = "your_secret_key"

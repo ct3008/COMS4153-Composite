@@ -76,7 +76,7 @@ class CompositeResource(BaseResource):
         self.nutrition_url = 'http://35.168.21.170:8002'  # Meilin AWS URL
         self.nutrition_local_url = 'http://0.0.0.0:8002'  # Local URL
 
-        self.mealplan_url = 'http://52.1.130.228:5002'  # Phoebe/Claudia AWS URL
+        self.mealplan_url = 'http://44.203.85.205:5002'  # Phoebe/Claudia AWS URL
         self.mealplan_local_url = 'http://0.0.0.0:5002'  # Local URL
 
         self.chosen_recipe_url = self._get_available_url(self.recipe_url, self.recipe_local_url)
