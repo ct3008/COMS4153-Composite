@@ -8,6 +8,7 @@ from enum import Enum
 import boto3
 import json
 import asyncio
+import requests
 
 from fastapi import FastAPI, HTTPException, APIRouter, Depends
 from datetime import datetime, timedelta
@@ -121,12 +122,178 @@ async def login(request: LoginRequest):
 
 #     return execution_arn
 
+def lambda_handler(event, context=None):
+    # URL of the API you want to call
+    try:
+        date = json.loads(event).get('date')
+        api_url = json.loads(event).get('mealplan_api_url')
+        if not date:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'message': 'Date is required'})
+            }
+        # print(date)
+        # api_url = "http://0.0.0.0:5002"
+        # KNOW THAT WE NEED TO PASS IN THE URL TO THE LAMBDA FUNCS FROM THE CHOSEN_MEALPLAN_URL IN REAL USE
+        
+        # GET WEEK PLAN ID THAT DATE IS FOUND IN
+
+        # result = requests.get(f"{api_url}/weekly-mealplans?date={date}")
+        # if result.status_code == 200:
+        #     result = result.json() 
+        
+        result = {"weekly_meal_plan":[{"week_plan_id":1,"start_date":"2024-12-09","end_date":"2024-12-15"}],"meals":[{"date":"2024-12-10","meal_id":2,"breakfast_recipe":"BBQ Ribs","lunch_recipe":"Omelette","dinner_recipe":"Veggie Burger","breakfast_id":14,"lunch_id":33,"dinner_id":37}],"daily_mealplan":[{"day_plan_id":3}]}
+        
+        # print("associated data for daily meal: ", result)
+        week_plan_id = result["weekly_meal_plan"][0]["week_plan_id"]
+        # print("week_plan_id: ",week_plan_id)
+
+        # GET MEAL_IDS FROM DAILY MEALS IN WEEK
+        
+        # result = requests.get(f"{api_url}/weekly-mealplans/{week_plan_id}/daily-mealplans")
+        # if result.status_code == 200:
+        #     result = result.json()
+        result = [{"day_plan_id":1,"week_plan_id":1,"date":"2024-12-08","meal_id":1,"links":None},{"day_plan_id":2,"week_plan_id":1,"date":"2024-12-09","meal_id":1,"links":None},{"day_plan_id":3,"week_plan_id":1,"date":"2024-12-10","meal_id":2,"links":None},{"day_plan_id":4,"week_plan_id":1,"date":"2024-12-11","meal_id":3,"links":None},{"day_plan_id":5,"week_plan_id":1,"date":"2024-12-12","meal_id":7,"links":None}]
+        
+        
+        # print(result[0])
+        meal_ids = {}
+
+        for item in result:
+            # print("item:", item)
+            meal_id = item.get('meal_id')
+            try:
+                meal_ids[meal_id]
+                meal_ids[meal_id] += 1
+            except:
+                meal_ids[meal_id] = 1
+            
+
+        # print("meal_ids: ", meal_ids)
+        
+        # GET RECIPE IDS
+        recipe_ids = {}
+        for meal_id in meal_ids:
+            multi = meal_ids[meal_id]
+            result = requests.get(f"{api_url}/mealplans/{meal_id}")
+            if result.status_code == 200:
+                result = result.json()
+            # print('result:', result)
+            breakfast_id = result["breakfast_recipe"]
+            lunch_id = result["lunch_recipe"]
+            dinner_id = result["dinner_recipe"]
+            # print(breakfast_id, lunch_id, dinner_id)
+            try:
+                recipe_ids[breakfast_id]
+                recipe_ids[breakfast_id] += multi*1
+            except:
+                recipe_ids[breakfast_id] = multi*1
+            try:
+                recipe_ids[lunch_id]
+                recipe_ids[lunch_id] += multi*1
+            except:
+                recipe_ids[lunch_id] = multi*1
+
+            try:
+                recipe_ids[dinner_id]
+                recipe_ids[dinner_id] += multi*1
+            except:
+                recipe_ids[dinner_id] = multi*1
+            
+        # print("recipe ids: ", recipe_ids)
+        # Check if the response is successful (status code 200)
+        
+        payload =  {'statusCode': 200, 'body': json.dumps(recipe_ids)}
+        return json.dumps(payload)
+    except Exception as e:
+        print("e")
+        return {'statusCode': 400, 'body': str(e)} 
+
+
+
+def lambda_handler2(event, context=None):
+    # Step 1: Extract the body from the event and load it as a Python dictionary
+    # print(event)
+    print("event: ", event)
+    recipe_data = json.loads(json.loads(event)['body'])  # event['body'] contains the raw JSON string
+    print(recipe_data)
+
+    # api_url = "https://sunny-truth-444203-c0.ue.r.appspot.com/recipes/id"
+    api_url  = 'http://0.0.0.0:8000'
+    ingredient_amounts = {}
+    try:
+        
+        for recipe_id in recipe_data:
+            # print("recipe id: ", recipe_id)
+            multi = recipe_data[recipe_id]
+            result = requests.get(f"{api_url}/recipes/id/{recipe_id}")
+            if result.status_code == 200:
+                result = result.json()
+            ingredients = result.get('ingredients')
+            
+            for ingredient in ingredients:
+                # print("ingredient:", ingredient)
+                name = ingredient.get('ingredient_name')
+                try:
+                    og_amt, og_unit = ingredient_amounts[name].split(' ')
+                    amt, unit = ingredient.get('quantity').split(' ')
+                    
+                    # print("Values: ", og_amt, og_unit, amt, unit)
+                    if '/' in og_amt:
+                        # print("og split")
+                        num, denom = og_amt.split('/')
+                        og_amt = round(float(num) / float(denom), 2)
+                    if '/' in amt:
+                        # print("new split")
+                        num,denom =amt.split('/')
+                        amt = round(float(num)/float(denom),2)
+                    print("new amt: ", og_amt,amt,og_unit)
+                    og_amt = float(og_amt)
+                    amt = float(amt)
+                    new_total = og_amt + (amt*multi)
+                    ingredient_amounts[name] = f"{new_total} {og_unit}"
+                    # print(f"---------------normal: {ingredient_amounts}----------------")
+                except:
+                    amt, unit = ingredient.get('quantity').split(' ')
+                    # print("EXCEPT amt unit", amt, unit)
+                    if '/' in amt:
+                        # print("EXCEPT div new new")
+                        num, denom = amt.split('/')
+                        amt = round(float(num)/float(denom),2)
+                    amt = float(amt)
+                    new_amt = multi * amt
+                    ingredient_amounts[name] = f"{new_amt} {unit}"
+                    # print(f"---------------new: {ingredient_amounts}----------------")
+        # print("final ingredient amount: ", ingredient_amounts)
+        
+        # return {'statusCode': 200, 'body': ingredient_amounts}
+        return {'statusCode': 200, 'body': json.dumps(ingredient_amounts)}
+        print("After return?")
+
+    except Exception as e: 
+        return {'statusCode': 400, 'body': str(e)}
+
 @router.get("/composite/step")
 async def stepfunction_ingredient_list(date: str):
     print("deployed urls: ", resource.chosen_recipe_url, resource.chosen_mealplan_url, resource.chosen_nutrition_url)
     if "0.0.0.0" in resource.chosen_recipe_url or "0.0.0.0" in resource.chosen_mealplan_url:
         print("failed connection to deployed url: ", resource.chosen_recipe_url, resource.chosen_mealplan_url)
-        return {"status": "Failed", "message": "Ensure recipe and mealplan are running on global URLS."}
+        # payload=json.dumps({"date": date, "mealplan_api_url": resource.chosen_mealplan_url, "recipe_api_url": resource.chosen_recipe_url})
+        # result = lambda_handler(payload)
+        # result2 = lambda_handler2(result)
+        # print("Final result: ", result2)
+        # # result_done = json.loads(result2)
+        # result_done = result2["body"]
+        
+        # return {"status": "SUCCEEDED", "output": result2}
+        payload = json.dumps({"date": date, "mealplan_api_url": resource.chosen_mealplan_url, "recipe_api_url": resource.chosen_recipe_url})
+        result = lambda_handler(payload)
+        result2 = lambda_handler2(result)
+        # print("result: ", result2)
+
+        result_done = json.loads(result2["body"])  # Parse the final result body
+        # print("result_done: ", result_done)
+        return {"status": "SUCCEEDED", "output": {"Payload": {"body": json.dumps(result_done)}}}
     else:
         step_functions_client = boto3.client('stepfunctions')
 
@@ -155,7 +322,7 @@ async def stepfunction_ingredient_list(date: str):
                 # Get the output when the execution is complete
                 output = status_response.get("output")
                 print("Execution succeeded!")
-                print(json.loads(output))
+                # print(json.loads(output))
                 return {"status": "SUCCEEDED", "output": json.loads(output)}
             elif status in ["FAILED", "TIMED_OUT", "ABORTED"]:
                 print(f"Execution ended with status: {status}")
