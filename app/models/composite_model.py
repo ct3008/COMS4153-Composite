@@ -179,7 +179,7 @@ class Recipe(BaseModel):
                     {
                         "ingredient_id": 150,
                         "ingredient_name": "Lime",
-                        "quantity": "1/2"
+                        "quantity": "1/2 piece"
                     },
                     {
                         "ingredient_id": 151,

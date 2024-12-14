@@ -7,8 +7,9 @@ from typing import Optional
 from enum import Enum
 import boto3
 import json
+import asyncio
 
-from fastapi import HTTPException, APIRouter, Depends
+from fastapi import FastAPI, HTTPException, APIRouter, Depends
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from pydantic import BaseModel
@@ -98,6 +99,70 @@ async def login(request: LoginRequest):
     print("jwt token: ", jwt_token)
 
     return {"access_token": jwt_token, "token_type": "bearer"}
+
+# @router.get("/composite/step")
+# async def get_recipe(recipe_id: int):
+
+#     step_functions_client = boto3.client('stepfunctions')
+
+#     # ARN of your Step Function
+#     state_machine_arn = "arn:aws:states:us-east-1:108782072640:stateMachine:MyStateMachine-cnz0373nu"
+    
+#     print("start executing")
+#     # Start execution of the Step Function
+#     response = step_functions_client.start_execution(
+#         stateMachineArn=state_machine_arn,  # ARN of the Step Function execution
+#         input=json.dumps({})  # Convert payload to JSON format
+#     )
+
+#     # Return the execution ARN from the response
+#     execution_arn = response['executionArn']
+#     print(f"Step Function execution started: {execution_arn}")
+
+#     return execution_arn
+
+@router.get("/composite/step")
+async def stepfunction_ingredient_list(date: str):
+    print("deployed urls: ", resource.chosen_recipe_url, resource.chosen_mealplan_url, resource.chosen_nutrition_url)
+    if "0.0.0.0" in resource.chosen_recipe_url or "0.0.0.0" in resource.chosen_mealplan_url:
+        print("failed connection to deployed url: ", resource.chosen_recipe_url, resource.chosen_mealplan_url)
+        return {"status": "Failed", "message": "Ensure recipe and mealplan are running on global URLS."}
+    else:
+        step_functions_client = boto3.client('stepfunctions')
+
+        # ARN of your Step Function
+        state_machine_arn = "arn:aws:states:us-east-1:108782072640:stateMachine:MyStateMachine-cnz0373nu"
+
+        print("Starting Step Function execution...")
+        # Start execution of the Step Function
+        response = step_functions_client.start_execution(
+            stateMachineArn=state_machine_arn,
+            input=json.dumps({"date": date, "mealplan_api_url": resource.chosen_mealplan_url, "recipe_api_url": resource.chosen_recipe_url})  # Pass the recipe_id to the Step Function
+        )
+
+        execution_arn = response['executionArn']
+        print(f"Step Function execution started: {execution_arn}")
+
+        # Poll for execution status asynchronously
+        while True:
+            status_response = step_functions_client.describe_execution(
+                executionArn=execution_arn
+            )
+            status = status_response['status']
+            print(f"Current status: {status}")
+
+            if status == "SUCCEEDED":
+                # Get the output when the execution is complete
+                output = status_response.get("output")
+                print("Execution succeeded!")
+                print(json.loads(output))
+                return {"status": "SUCCEEDED", "output": json.loads(output)}
+            elif status in ["FAILED", "TIMED_OUT", "ABORTED"]:
+                print(f"Execution ended with status: {status}")
+                return {"status": status, "message": "Execution did not complete successfully."}
+
+            # Wait asynchronously for 5 seconds before polling again
+            await asyncio.sleep(5)
 
 @router.get("/composite/recipes/id/{recipe_id}", tags=["Recipes"])
 async def get_recipe(recipe_id: int):
