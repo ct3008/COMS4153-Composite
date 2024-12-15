@@ -73,10 +73,10 @@ class CompositeResource(BaseResource):
         self.recipe_url = 'https://sunny-truth-444203-c0.ue.r.appspot.com/'
         self.recipe_local_url = 'http://0.0.0.0:8000'  # Local URL
         
-        self.nutrition_url = 'http://54.208.17.114:8002'  # Meilin AWS URL
+        self.nutrition_url = 'http://54.210.67.10:8002'  # Meilin AWS URL
         self.nutrition_local_url = 'http://0.0.0.0:8002'  # Local URL
 
-        self.mealplan_url = 'http://54.81.246.57:5002'  # Phoebe/Claudia AWS URL
+        self.mealplan_url = 'http://3.82.4.51:5002'  # Phoebe/Claudia AWS URL
         self.mealplan_local_url = 'http://0.0.0.0:5002'  # Local URL
 
         self.chosen_recipe_url = self._get_available_url(self.recipe_url, self.recipe_local_url)
