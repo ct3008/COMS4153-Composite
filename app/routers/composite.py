@@ -497,8 +497,6 @@ async def create_recipe(recipe: Recipe):
         return recipe
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
     
 @router.put("/composite/recipes/id/{recipe_id}", tags=["Recipes"], response_model=Recipe)
 async def update_recipe(recipe_id: int, recipe: Recipe):
@@ -619,6 +617,7 @@ async def get_ingredient_nutrition(recipe_id: int):
 async def get_ingredient_name(ingredient_id: int):
     try:
         nutrition_info = resource.nutrition_client.get(f"nutrition/ingredient_name/{ingredient_id}")
+        print(nutrition_info)
         return nutrition_info
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -835,10 +834,10 @@ async def get_mealplans(request: Request, meal_id: int):
         raise HTTPException(status_code=500, detail=str(e))
     
 
-@router.post("/composite/mealplans/", tags=["Meal Plans"], response_model=Mealplan)
+@router.post("/composite/mealplans", tags=["Meal Plans"], response_model=Mealplan)
 async def create_mealplan(mealplan: Mealplan):
     try:
-        mealplan = resource.mealplan_client.post(f"mealplans/", mealplan.dict())
+        mealplan = resource.mealplan_client.post(f"mealplans", mealplan.dict())
         return mealplan
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
