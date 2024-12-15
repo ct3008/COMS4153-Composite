@@ -295,7 +295,7 @@ async def stepfunction_ingredient_list(date: str):
         # print("result_done: ", result_done)
         return {"status": "SUCCEEDED", "output": {"Payload": {"body": json.dumps(result_done)}}}
     else:
-        step_functions_client = boto3.client('stepfunctions')
+        step_functions_client = boto3.client('stepfunctions',region_name='us-east-1')
 
         # ARN of your Step Function
         state_machine_arn = "arn:aws:states:us-east-1:108782072640:stateMachine:MyStateMachine-cnz0373nu"
