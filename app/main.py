@@ -71,15 +71,15 @@ async def add_user_to_request(request: Request, call_next):
     if request.method == "OPTIONS":
         return await call_next(request)
     path = request.url.path
-    print("path: ", path)
-    if path.startswith("/composites"):
-        print("start with composite")
+    # print("path: ", path)
+    if path.startswith("/composite"):
+        # print("start with composite")
         token = request.headers.get("Authorization")
-        print("token middleware: ", token)
+        # print("token middleware: ", token)
         if token and token.startswith("Bearer "):
-            print("bearer")
+            # print("bearer")
             token = token[7:]
-            print("new token: ", token)
+            # print("new token: ", token)
             user_id = verify_token(token)  # Remove "Bearer " prefix
             request.state.user_id = user_id
         else:
