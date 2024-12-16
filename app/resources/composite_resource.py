@@ -17,51 +17,6 @@ import json
 import jwt
 from datetime import datetime, timedelta
 
-# JWT Secret and Expiration Time
-# JWT_SECRET = "your_jwt_secret_key"
-# JWT_ALGORITHM = "HS256"
-# JWT_EXPIRATION_MINUTES = 30  # Token expiry time in minutes
-
-# # OAuth2 password bearer token
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# # Function to authenticate the user using Google
-# def google_login(request: Request):
-#     # Assuming credentials.json is your Google OAuth2 client credentials file
-#     client_secrets_file = os.path.join(os.getcwd(), 'client_secrets.json')
-#     flow = InstalledAppFlow.from_client_secrets_file(
-#         client_secrets_file, scopes=["https://www.googleapis.com/auth/userinfo.profile"]
-#     )
-#     credentials = flow.run_local_server(port=0)
-
-#     # Get the user's info
-#     session = credentials.authorize(Request())
-#     user_info = session.get("https://www.googleapis.com/oauth2/v3/userinfo").json()
-
-#     # You can use user_info to create a user record in the database, etc.
-
-#     # After successful login, issue a JWT token for the user
-#     token = create_jwt_token(user_info["sub"])
-#     return {"access_token": token, "token_type": "bearer"}
-
-# # JWT token creation
-# def create_jwt_token(user_id: str):
-#     expiration = datetime.utcnow() + timedelta(minutes=JWT_EXPIRATION_MINUTES)
-#     to_encode = {"sub": user_id, "exp": expiration}
-#     encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
-#     return encoded_jwt
-
-# # Middleware to validate JWT tokens
-# async def validate_jwt_token(token: str = Depends(oauth2_scheme)):
-#     try:
-#         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
-#         return payload
-#     except jwt.PyJWTError:
-#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
-
-# Apply this middleware for token validation globally or on specific routes
-
-
 class CompositeResource(BaseResource):
     
     def __init__(self, config):
@@ -69,8 +24,8 @@ class CompositeResource(BaseResource):
         self.data_service = ServiceFactory.get_service("CompositeResourceDataService")
         
         # Primary and fallback URLs for each microservice
-        self.recipe_url = 'http://54.162.118.11:8000'  # Yuxuan AWS URL
-        # self.recipe_url = 'https://sunny-truth-444203-c0.ue.r.appspot.com/'
+        # self.recipe_url = 'http://54.162.118.11:8000'  # Yuxuan AWS URL
+        self.recipe_url = 'https://sunny-truth-444203-c0.ue.r.appspot.com/'
         self.recipe_local_url = 'http://0.0.0.0:8000'  # Local URL
         
         self.nutrition_url = 'http://52.55.109.109:8002'  # Meilin AWS URL
@@ -82,8 +37,7 @@ class CompositeResource(BaseResource):
         self.chosen_recipe_url = self._get_available_url(self.recipe_url, self.recipe_local_url)
         self.chosen_nutrition_url = self._get_available_url(self.nutrition_url, self.nutrition_local_url)
         self.chosen_mealplan_url = self._get_available_url(self.mealplan_url, self.mealplan_local_url)
-        # print("URLS: ", self.chosen_recipe_url, self.chosen_nutrition_url, self.chosen_mealplan_url)
-        print("URLS: ", 'https://sunny-truth-444203-c0.ue.r.appspot.com/', self.chosen_nutrition_url, self.chosen_mealplan_url)
+        print("URLS: ", self.chosen_recipe_url, self.chosen_nutrition_url, self.chosen_mealplan_url)
 
         # Initialize clients with the available URL
         self.recipe_client = MicroserviceClient(self._get_available_url(self.recipe_url, self.recipe_local_url))
@@ -150,65 +104,3 @@ class CompositeResource(BaseResource):
     def get_total_count(self, collection: str) -> int:
         client = self._get_client_for_collection(collection)
         return client.get_total_count(collection)
-
-    # def make_authenticated_request(self, client, method, endpoint, user_id, data=None):
-    #     """
-    #     Makes a request to the specified client with a user-specific header.
-    #     """
-    #     headers = {"X-User-ID": str(user_id)}  # Include user ID as a custom header
-    #     if method == "GET":
-    #         return client.get(endpoint, headers=headers)
-    #     elif method == "POST":
-    #         return client.post(endpoint, json=data, headers=headers)
-    #     elif method == "PUT":
-    #         return client.put(endpoint, json=data, headers=headers)
-    #     elif method == "DELETE":
-    #         return client.delete(endpoint, headers=headers)
-    #     else:
-    #         raise ValueError(f"Unsupported HTTP method: {method}")
-
-    # def get_mealplans(self):
-    #     return self.make_authenticated_request(self.mealplan_client, "GET", "mealplans/")
-    
-
-
-
-
-    # def get_by_key(self, key: Any, collection: str):
-    #     d_service = self.data_service
-    #     try:
-    #         key = int(key)
-    #     except ValueError:
-    #         key = str(key)  # Return an error code for incorrect key type
-        
-    #     if collection == "meal_plans":
-    #         result = d_service.get_data_object(
-    #             self.database, self.meal_plans, key_field=self.meal_plans_pk, key_value=key
-    #         )
-    #         return Mealplan(**result)
-    #     elif collection == "weekly_meal_plans":
-    #         result = d_service.get_data_object(
-    #             self.database, self.weekly_meal_plans, key_field=self.weekly_pk, key_value=key
-    #         )
-    #         return WeeklyMealplan(**result)
-    #     elif collection == "daily_meal_plans":
-    #         result = d_service.get_data_object(
-    #             self.database, self.daily_meal_plans, key_field=self.daily_pk, key_value=key
-    #         )
-    #         return DailyMealplan(**result)
-
-    # def update_by_key(self, key: str, data: dict) -> Mealplan:
-    #     d_service = self.data_service
-    #     d_service.update_data(
-    #         self.database, self.meal_plans, data, key_field=self.key_field, key_value=key
-    #     )
-    #     return self.get_by_key(key)
-
-    # def delete_by_key(self, key: str) -> None:
-    #     d_service = self.data_service
-    #     d_service.delete_data(
-    #         self.database, self.meal_plans, key_field=self.key_field, key_value=key
-    #     )
-
-    # def get_total_count(self) -> int:
-    #     return self.data_service.get_total_count(self.database, self.meal_plans)
